@@ -1,0 +1,395 @@
+EXP 1:
+
+PC0-192.168.1.1
+PC1-192.168.1.2
+.....(add no of PC with IP)
+
+using switch 2960
+   connect using wire thst enough 
+using hub-pt
+   connect using wire that's enough
+using router 1941
+
+   giga1-192.168.1.1 giga2-192.168.2.1
+   switch1->PC1(192.168.1.2 default gateway 192.168.1.1) and Pc2(192.168.1.3 default gateway 192.168.1.1)
+   switch2->PC3(192.168.2.2 default gateway 192.168.2.1) and Pc2(192.168.2.3 default gateway 192.168.2.1)
+   only 2 PC can be directly connect to the router 
+            or
+  2 switch need to connect to router and the PCs should be connected throught that set ip for pc and for router also set IP on two ports which should be given as default gateway for 
+  2 PC or 2 Switches
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+EXP 2:
+
+On PC0
+
+Click PC0 → Desktop → IP Configuration
+
+Under IPv6, enter:
+
+IPv6 Address: 2001:db8:1::2
+
+Prefix Length: 64
+
+Default Gateway: 2001:db8:1::1
+
+🖥 On PC1
+
+Click PC1 → Desktop → IP Configuration
+
+Enter:
+
+IPv6 Address: 2001:db8:2::2
+
+Prefix Length: 64
+
+Default Gateway: 2001:db8:2::1
+
+
+
+
+
+Router> enable
+Router# configure terminal
+Router(config)# interface gig0/0
+Router(config-if)# ipv6 address 2001:db8:1::1/64
+Router(config-if)# no shutdown
+
+Router(config)# interface gig0/1
+Router(config-if)# ipv6 address 2001:db8:2::1/64
+Router(config-if)# no shutdown
+
+
+
+
+
+
+Router(config)# ipv6 unicast-routing
+Router(config)# end
+Router# write
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+EXP 3: VLAN
+
+--------------------
+USING SWITCH ALONE 
+--------------------
+Step 1: Network Setup (Physical)
+
+Drag one switch (e.g., 2960) into workspace.
+
+Drag four PCs (PC1–PC4).
+
+Connect them using Copper Straight-Through cables:
+
+PC1 → Switch Fa0/1
+
+PC2 → Switch Fa0/2
+
+PC3 → Switch Fa0/3
+
+PC4 → Switch Fa0/4
+
+🖥 Step 2: Assign IP Addresses to PCs
+PC	IP Address	Subnet Mask	VLAN
+PC1	192.168.10.2	255.255.255.0	10
+PC2	192.168.10.3	255.255.255.0	10
+PC3	192.168.20.2	255.255.255.0	20
+PC4	192.168.20.3	255.255.255.0	20
+
+👉 Set these under Desktop → IP Configuration for each PC.
+(No default gateway yet — that’s for inter-VLAN routing.)
+
+⚡ Step 3: Switch Configuration
+
+Open the Switch CLI and enter the following commands:
+
+Switch> enable
+Switch# configure terminal
+
+! Create VLANs
+Switch(config)# vlan 10
+Switch(config-vlan)# name Sales
+Switch(config-vlan)# exit
+
+Switch(config)# vlan 20
+Switch(config-vlan)# name HR
+Switch(config-vlan)# exit
+
+! Assign ports to VLAN 10 (PC1, PC2)
+Switch(config)# interface range fa0/1 - 2
+Switch(config-if-range)# switchport mode access
+Switch(config-if-range)# switchport access vlan 10
+Switch(config-if-range)# exit
+
+! Assign ports to VLAN 20 (PC3, PC4)
+Switch(config)# interface range fa0/3 - 4
+Switch(config-if-range)# switchport mode access
+Switch(config-if-range)# switchport access vlan 20
+Switch(config-if-range)# exit
+
+! Verify VLAN setup
+Switch# show vlan brief
+
+Same VLAN (Should Work ✅)
+
+From PC1 → ping 192.168.10.3 (PC2)
+→ Success ✅
+From PC3 → ping 192.168.20.3 (PC4)
+→ Success ✅
+
+Different VLANs (Should Fail ❌)
+
+From PC1 → ping 192.168.20.2 (PC3)
+→ Fail (Request timed out)
+
+-----------------------
+USING ROUTER AND SWITCH 
+-----------------------
+
+Step 1: Topology Setup
+
+Use the existing switch (with VLANs 10 & 20).
+
+Add one router (e.g., 2911).
+
+Connect the router to the switch:
+
+Use a GigabitEthernet port on the router (e.g., Gig0/0)
+
+Connect to the switch’s trunk port (e.g., Fa0/5).
+
+⚙ Step 2: Configure the Switch (Trunk Port)
+
+Go to the switch CLI and type:
+
+Switch> enable
+Switch# configure terminal
+
+interface fa0/5
+switchport mode trunk
+exit
+
+end
+
+
+🧠 This port carries traffic for multiple VLANs to the router.
+
+⚙ Step 3: Configure the Router (Router-on-a-Stick)
+
+Now configure sub-interfaces — one for each VLAN.
+
+Open the router CLI and type:
+
+Router> enable
+Router# configure terminal
+
+interface gigabitEthernet0/0
+no shutdown
+
+interface gigabitEthernet0/0.10
+encapsulation dot1Q 10
+ip address 192.168.10.1 255.255.255.0
+exit
+
+interface gigabitEthernet0/0.20
+encapsulation dot1Q 20
+ip address 192.168.20.1 255.255.255.0
+exit
+
+end
+
+
+✅ Here:
+
+VLAN 10 gateway → 192.168.10.1
+
+VLAN 20 gateway → 192.168.20.1
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+EXP 4 - WLAN
+
+1) Topology — place devices
+
+Open Packet Tracer and add:
+
+Switch → Cisco 2960 (or similar managed switch)
+
+Server → Generic Server (Server0)
+
+3 Access Points → (Access Point0, Access Point1, Access Point2)
+
+Wireless end devices → Laptop0, Smartphone0, Tablet0 (they include wireless NICs)
+
+Copper straight-through cables to connect APs & server to the switch.
+
+Connect like this (example ports):
+
+Server0 — FastEthernet0 → Switch Fa0/1
+
+AP0 — Fa0 → Switch Fa0/2
+
+AP1 — Fa0 → Switch Fa0/3
+
+AP2 — Fa0 → Switch Fa0/4
+(End devices connect wirelessly — no cable.)
+
+Tip: Use enough APs to cover the workspace; for a simple lab 1 AP is enough, but multiple APs show roaming/coverage.
+
+2) Basic switch setup (optional, single VLAN)
+
+If you want everything on one network (simple lab), you don’t need VLANs. Just ensure the ports are up:
+
+Click the switch → CLI (or GUI).
+
+Quick check:
+
+Switch> enable
+Switch# show interfaces status
+
+
+Make sure Fa0/1–Fa0/4 show connected. If any port is notconnect, replug cable or use the correct cable type.
+
+3) Configure the Server — static IP + DHCP pool
+A. Give server a static IP
+
+Click Server0 → Config tab → FastEthernet0 (or IP Config).
+
+Set:
+
+IP Address: 192.168.1.1
+
+Subnet Mask: 255.255.255.0
+
+Default Gateway: (leave blank or set if you’ll add a router later)
+
+Click On for the interface if available.
+
+B. Configure DHCP service on server
+
+Still in Server0 → go to Services → DHCP.
+
+Fill fields:
+
+Pool Name: WLAN-Pool
+
+Default Gateway: 192.168.1.1
+
+Subnet Mask: 255.255.255.0
+
+Start IP Address: 192.168.1.10
+
+Maximum Users: 50
+
+Click Add (or ON) to enable the pool.
+
+Expected: Server will hand out addresses starting at 192.168.1.10 and list pool details.
+
+4) Configure Access Points (AP0, AP1, AP2)
+
+You can give all APs the same SSID so wireless clients see a single network (roaming).
+
+For each AP:
+
+Click Access PointX → Config tab (or GUI tab depending on Packet Tracer version).
+
+Under Wireless0 (or the Wireless config section):
+
+SSID: Campus-WLAN
+
+Broadcast SSID: ON
+
+Network Mode: g or b/g/n (default is fine)
+
+Channel: leave default or set different channels for adjacent APs (1,6,11) to reduce interference.
+
+Security:
+
+WPA2-PSK (if option present)
+
+Pre-shared key / Passphrase: 12345 (or your chosen password)
+
+6) Configure Wireless End Devices — connect to SSID
+Laptop0
+
+Click Laptop0 → Desktop → PC Wireless (or Wireless tab).
+
+Click Connect or Select Wireless Network.
+
+Choose Campus-WLAN from the list.
+
+Enter the passphrase: 12345.
+
+Click Connect.
+
+Check IP Configuration (Desktop → IP Configuration) — it should obtain an IP from DHCP (e.g., 192.168.1.10).
+
+Smartphone0 & Tablet0
+
+Click device → GUI or Desktop → Wireless.
+
+Enable wireless adapter (if needed) and join Campus-WLAN with 12345.
+
+They should get IPs (e.g., 192.168.1.11, 192.168.1.12).
+
+Tip: If a device doesn’t receive IP, try disabling then re-enabling its wireless adapter or reboot the device. Also check Server DHCP service is ON.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+EXP 6
+
+Step 1: Build the Topology
+
+Open Cisco Packet Tracer.
+
+Drag and drop:
+
+1 Switch (2960)
+
+1 Server (Server0)
+
+1 Access Point (AP)
+
+1 Laptop (wireless)
+
+Connect:
+
+AP → Switch (Copper Straight-Through)
+
+Server → Switch (Copper Straight-Through)
+
+Laptop → AP (wireless connection automatically handled)
+
+🧾 Step 2: Configure the RADIUS Server (Server0)
+🧱 Set Server IP
+
+Click Server0 → Desktop → IP Configuration
+
+IP Address: 192.168.10.10
+
+Subnet Mask: 255.255.255.0
+
+Default Gateway: 192.168.10.1 (Router not needed for local demo)
+
+n the AAA → Network Configuration section:
+
+Client Name: AccessPoint1 (or any name you want for identification)
+
+Client IP: Enter your Access Point’s IP address (e.g., 192.168.10.2)
+
+ServerType: Keep as Radius
+
+Secret: Enter your shared secret key → radius123
+
+Click Add
+
+Client Name:student
+
+password: cisco123
+
+Access Point
+------------
+On the AP, just configure WPA2-PSK using a key like radius123 (for visualization).
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
