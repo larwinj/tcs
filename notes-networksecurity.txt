@@ -337,6 +337,81 @@ They should get IPs (e.g., 192.168.1.11, 192.168.1.12).
 Tip: If a device doesn’t receive IP, try disabling then re-enabling its wireless adapter or reboot the device. Also check Server DHCP service is ON.
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+EXP 5A
+
+Step 1 — Physical Connections
+From	To	Cable Type	Purpose
+Router G0/0	Switch Port F0/1	Copper Straight-Through	For PCs’ VLAN/Subnet (192.168.10.0/24)
+Router G0/1	Server Fa0	Copper Straight-Through	For DHCP server network (192.168.20.0/24)
+PC1 Fa0	Switch F0/2	Copper Straight-Through	Client 1
+PC2 Fa0	Switch F0/3	Copper Straight-Through	Client 2
+
+
+Configure the Router
+Router> enable
+Router# configure terminal
+Router(config)# interface g0/0
+Router(config-if)# ip address 192.168.10.1 255.255.255.0
+Router(config-if)# no shutdown
+Router(config-if)# exit
+
+Router(config)# interface g0/1
+Router(config-if)# ip address 192.168.20.1 255.255.255.0
+Router(config-if)# no shutdown
+Router(config-if)# exit
+
+! Enable DHCP Relay toward the server
+Router(config)# interface g0/0
+Router(config-if)# ip helper-address 192.168.20.2
+Router(config-if)# exit
+
+
+Configure the DHCP Server
+
+Go to DHCP Service tab.
+
+Turn DHCP ON.
+
+Create a Pool:
+
+Pool Name: LAN10
+
+Default Gateway: 192.168.10.1
+
+DNS Server: 8.8.8.8
+
+Start IP Address: 192.168.10.10
+
+Subnet Mask: 255.255.255.0
+
+Server IP Configuration
+
+On your Server → Desktop → IP Configuration, make sure:
+
+Field	Value
+IP Address	192.168.20.2
+Subnet Mask	255.255.255.0
+Default Gateway	192.168.20.1
+
+⚠ The Default Gateway must be 192.168.20.1 (the router’s G0/1).
+If it’s blank, DHCP replies can’t go back to the PCs.
+
+From the Router, ping the server:
+
+ping 192.168.20.2
+
+
+You should get replies.
+
+WAIT FOR SOMETIME
+On PC
+Go to Desktop → IP Configuration → DHCP
+→ Wait 5 seconds
+
+ping PCs
+
+------------------------------------------------------------------------------------------------------------------------------
 EXP 6
 
 Step 1: Build the Topology
@@ -391,5 +466,6 @@ password: cisco123
 Access Point
 ------------
 On the AP, just configure WPA2-PSK using a key like radius123 (for visualization).
+
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
